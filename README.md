@@ -72,9 +72,10 @@ Custom-logic candidates we can build next:
 - `docs/command_policy.md`
 - `docs/governance_model.md`
 - `docs/watchlist_workflow.md`
+- `docs/app_ready_v0_1_0.md`
 - `docs/roadmap.md`
 
-Those files define what belongs here, what does not, and how command support should be classified without lying to ourselves.
+Those files define what belongs here, what does not, and how command support should be classified without lying to ourselves. `docs/app_ready_v0_1_0.md` is the cleanest source for early app-conversion wording.
 
 ## CLI
 
