@@ -66,6 +66,7 @@ Custom-logic candidates we can build here:
 - `AGENTS.md`
 - `docs/architecture.md`
 - `docs/command_policy.md`
+- `docs/governance_model.md`
 - `docs/roadmap.md`
 
 Those files define what belongs here, what does not, and how command support should be classified without lying to ourselves.
