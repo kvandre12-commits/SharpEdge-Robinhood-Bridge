@@ -194,7 +194,7 @@ COMMAND_SPECS: tuple[CommandSpec, ...] = (
         summary="Retrieve all local SharpEdge workflow-state watchlists available to the user.",
         notes=(
             "Purpose: retrieve all watchlists available to the user within SharpEdge's local workflow layer.",
-            "Use when you need to review existing workflow, strategy, or research buckets.",
+            "Use when the agent needs to discover which workflow, strategy, or research watchlists currently exist.",
             "This is implemented as local SharpEdge bridge logic for workflow-state organization.",
             "It does not claim verified public Robinhood watchlist-directory support.",
         ),

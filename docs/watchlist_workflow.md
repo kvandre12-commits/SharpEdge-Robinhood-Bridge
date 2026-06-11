@@ -8,6 +8,8 @@
 
 Related command purpose for `get_watchlists`: retrieve all watchlists available to the user within SharpEdge's local workflow layer, in canonical stage order.
 
+Related command use when for `get_watchlists`: the agent needs to discover which workflow, strategy, or research watchlists currently exist.
+
 In SharpEdge, watchlists are **workflow states**, not passive storage bins.
 
 A symbol does not merely sit in a list. It moves through a governed decision
