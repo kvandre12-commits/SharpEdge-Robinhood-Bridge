@@ -61,6 +61,15 @@ Custom-logic candidates we can build here:
 - `get_option_chains`
 - `get_option_instruments`
 
+## Repo guidance
+
+- `AGENTS.md`
+- `docs/architecture.md`
+- `docs/command_policy.md`
+- `docs/roadmap.md`
+
+Those files define what belongs here, what does not, and how command support should be classified without lying to ourselves.
+
 ## CLI
 
 Classify a command:
