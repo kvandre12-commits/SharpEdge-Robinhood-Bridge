@@ -2,6 +2,8 @@
 
 ## Core principle
 
+**Purpose:** Create a new custom watchlist for organizing trading ideas by workflow stage.
+
 In SharpEdge, watchlists are **workflow states**, not passive storage bins.
 
 A symbol does not merely sit in a list. It moves through a governed decision

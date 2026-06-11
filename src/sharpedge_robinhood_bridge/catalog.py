@@ -170,9 +170,9 @@ COMMAND_SPECS: tuple[CommandSpec, ...] = (
         support_tier="implemented_custom_logic",
         route="custom_logic_local",
         handler_name="create_watchlist",
-        summary="Create a local SharpEdge workflow-state watchlist queue.",
+        summary="Create a local SharpEdge workflow-state watchlist for organizing trading ideas by decision stage.",
         notes=(
-            "This is implemented as local SharpEdge bridge logic.",
+            "This is implemented as local SharpEdge bridge logic for workflow-state organization.",
             "It does not claim verified public Robinhood watchlist-write support.",
         ),
     ),
