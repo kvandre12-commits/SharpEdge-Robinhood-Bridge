@@ -64,7 +64,7 @@ Use for commands that are not currently verified in the public source but are re
 
 Examples:
 
-- `create_watchlist`
+- `create_watchlist` (implemented local custom logic)
 - `get_watchlists`
 - `update_watchlist`
 - `get_option_chains`
@@ -72,7 +72,8 @@ Examples:
 
 Expected route:
 
-- `custom_logic_required`
+- `custom_logic_required` while still only modeled
+- `custom_logic_local` once implemented in this repo
 
 ### `unknown`
 Use when we do not have a modeled command yet.

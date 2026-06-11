@@ -50,7 +50,7 @@ Allowed posture:
 
 Typical watchlist commands:
 
-- `create_watchlist`
+- `create_watchlist` (implemented local custom logic)
 - `get_watchlists`
 - `get_watchlist`
 - `update_watchlist`
@@ -168,7 +168,7 @@ Belong mainly in:
 
 Examples:
 
-- `create_watchlist`
+- `create_watchlist` (implemented local custom logic)
 - `get_watchlists`
 - `get_watchlist`
 - `update_watchlist`

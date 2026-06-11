@@ -184,7 +184,7 @@ Approval posture:
 ### Tier D — custom-logic candidates
 Examples:
 
-- `create_watchlist`
+- `create_watchlist` (implemented local custom logic)
 - `get_watchlists`
 - `update_watchlist`
 - `get_option_chains`
@@ -196,7 +196,8 @@ Category:
 
 Route:
 
-- `custom_logic_required`
+- `custom_logic_required` for modeled-but-not-built commands
+- `custom_logic_local` for commands implemented in this repo
 
 Approval posture:
 

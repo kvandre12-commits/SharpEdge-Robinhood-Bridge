@@ -4,6 +4,7 @@ import argparse
 import json
 from typing import Any
 
+from .executor import run_command
 from .router import plan_command
 
 
@@ -30,11 +31,20 @@ def build_parser() -> argparse.ArgumentParser:
     plan_parser = subparsers.add_parser("plan")
     plan_parser.add_argument("capability")
     plan_parser.add_argument("--payload", default="")
+
+    run_parser = subparsers.add_parser("run")
+    run_parser.add_argument("capability")
+    run_parser.add_argument("--payload", default="")
     return parser
 
 
 def main() -> None:
     args = build_parser().parse_args()
     payload = _parse_payload(getattr(args, "payload", ""))
+    if args.command == "run":
+        result = run_command(args.capability, payload)
+        print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
+        return
+
     plan = plan_command(args.capability, payload)
     print(json.dumps(plan.to_dict(), indent=2, sort_keys=True))

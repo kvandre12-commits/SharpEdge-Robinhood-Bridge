@@ -48,6 +48,7 @@ It should answer questions like:
 
 - `public_mcp_read`
 - `chatgpt_delegate`
+- `custom_logic_local`
 - `custom_logic_required`
 - `unknown`
 
@@ -60,8 +61,13 @@ It should answer questions like:
 
 ## First implementation targets
 
+Implemented:
+
 - `create_watchlist`
+
+Next strong candidates:
+
 - `get_watchlists`
 - `update_watchlist`
 
-Those are strong candidates for new bridge-side logic in this repo.
+Those are strong watchlist-state commands for bridge-side logic in this repo.

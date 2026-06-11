@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import unittest
 
-from sharpedge_robinhood_bridge import plan_command
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from sharpedge_robinhood_bridge import plan_command, run_command
 
 
 class RouterTests(unittest.TestCase):
@@ -21,17 +24,45 @@ class RouterTests(unittest.TestCase):
         self.assertEqual(plan.approval_policy, "operator_confirm_required")
         self.assertEqual(plan.payload["symbol"], "SPY")
 
-    def test_custom_logic_candidate_is_not_labeled_verified(self) -> None:
+    def test_create_watchlist_is_local_custom_logic(self) -> None:
         plan = plan_command("create_watchlist")
         self.assertTrue(plan.matched)
         self.assertEqual(plan.category, "custom_logic_candidate")
-        self.assertEqual(plan.support_tier, "custom_logic_candidate")
-        self.assertEqual(plan.route, "custom_logic_required")
+        self.assertEqual(plan.support_tier, "implemented_custom_logic")
+        self.assertEqual(plan.route, "custom_logic_local")
+        self.assertEqual(plan.handler_name, "create_watchlist")
+
+    def test_run_create_watchlist_persists_workflow_state(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            result = run_command(
+                "create_watchlist",
+                {"name": "Candidate", "symbols": ["aapl", "msft", "AAPL"]},
+                base_dir=Path(temp_dir),
+            )
+            self.assertTrue(result.executed)
+            self.assertEqual(result.status, "created")
+            watchlist = result.result["watchlist"]
+            self.assertEqual(watchlist["workflow_state"], "Candidate")
+            self.assertEqual(watchlist["symbols"], ["AAPL", "MSFT"])
+
+    def test_run_create_watchlist_returns_existing_state_queue(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            first = run_command("create_watchlist", {"name": "Candidate"}, base_dir=Path(temp_dir))
+            second = run_command("create_watchlist", {"name": "candidate"}, base_dir=Path(temp_dir))
+            self.assertEqual(first.status, "created")
+            self.assertEqual(second.status, "exists")
+
+    def test_invalid_watchlist_state_returns_validation_result(self) -> None:
+        result = run_command("create_watchlist", {"name": "Moon Mission"})
+        self.assertFalse(result.executed)
+        self.assertEqual(result.status, "invalid_payload")
+        self.assertIn("allowed states", result.summary)
 
     def test_unknown_command_stays_unknown(self) -> None:
         plan = plan_command("launch_missiles")
         self.assertFalse(plan.matched)
         self.assertEqual(plan.route, "unknown")
+        self.assertEqual(plan.handler_name, "")
 
 
 if __name__ == "__main__":

@@ -20,6 +20,7 @@ def plan_command(candidate: str, payload: dict[str, Any] | None = None) -> Comma
             support_tier="unknown",
             route="unknown",
             approval_policy="unknown",
+            handler_name="",
             summary="No registry match yet.",
             notes=[
                 "Add a command spec before wiring logic.",
@@ -35,6 +36,8 @@ def plan_command(candidate: str, payload: dict[str, Any] | None = None) -> Comma
         notes.append("Route through approval-gated delegate flow, not direct autonomous submission.")
     if spec.route == "custom_logic_required":
         notes.append("This repo is the right place to implement new handler logic for this command.")
+    if spec.route == "custom_logic_local":
+        notes.append("This command is handled locally by SharpEdge Robinhood Bridge custom logic.")
 
     return CommandPlan(
         candidate=candidate,
@@ -45,6 +48,7 @@ def plan_command(candidate: str, payload: dict[str, Any] | None = None) -> Comma
         support_tier=spec.support_tier,
         route=spec.route,
         approval_policy=spec.approval_policy,
+        handler_name=spec.handler_name,
         summary=spec.summary,
         notes=notes,
         payload=payload,

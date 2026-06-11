@@ -3,15 +3,18 @@
 ## Near-term
 
 ### 1. Watchlist command slice
-Implement the first custom-logic set:
+Current state:
 
-- `create_watchlist`
+- `create_watchlist` implemented as local custom logic
+
+Next commands:
+
 - `get_watchlists`
 - `update_watchlist`
 
 Goal:
 
-- convert these from catalog-only candidates into real handler-backed commands
+- extend the watchlist workflow slice beyond creation
 - keep policy boundaries intact
 
 ### 2. Handler interface

@@ -33,6 +33,7 @@ This repo is the middle layer:
 
 - `public_mcp_read`
 - `chatgpt_delegate`
+- `custom_logic_local`
 - `custom_logic_required`
 - `unknown`
 
@@ -52,9 +53,12 @@ Approval-gated trading intents:
 - `order_cancel`
 - `order_replace`
 
-Custom-logic candidates we can build here:
+Implemented custom logic:
 
 - `create_watchlist`
+
+Custom-logic candidates we can build next:
+
 - `update_watchlist`
 - `get_watchlists`
 - `get_option_watchlist`
@@ -80,6 +84,12 @@ Classify a command:
 python -m sharpedge_robinhood_bridge classify create_watchlist
 ```
 
+Run a local custom-logic command:
+
+```bash
+python -m sharpedge_robinhood_bridge run create_watchlist --payload '{"name":"Candidate","symbols":["AAPL","MSFT"]}'
+```
+
 Build a command plan:
 
 ```bash
@@ -89,5 +99,5 @@ python -m sharpedge_robinhood_bridge plan order_submit --payload '{"symbol":"SPY
 ## Dev test
 
 ```bash
-python -m unittest discover -s tests -p 'test_*.py'
+PYTHONPATH=src python -m unittest discover -s tests -p 'test_*.py'
 ```
