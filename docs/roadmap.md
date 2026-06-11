@@ -6,10 +6,10 @@
 Current state:
 
 - `create_watchlist` implemented as local custom logic
+- `get_watchlists` implemented as local custom logic
 
 Next commands:
 
-- `get_watchlists`
 - `update_watchlist`
 
 Goal:

@@ -188,9 +188,15 @@ COMMAND_SPECS: tuple[CommandSpec, ...] = (
     CommandSpec(
         name="get_watchlists",
         category="custom_logic_candidate",
-        support_tier="custom_logic_candidate",
-        route="custom_logic_required",
-        summary="Candidate for watchlist directory/list-all logic.",
+        support_tier="implemented_custom_logic",
+        route="custom_logic_local",
+        handler_name="get_watchlists",
+        summary="List local SharpEdge workflow-state watchlists for reviewing current trading-idea buckets.",
+        notes=(
+            "Use when you need to review existing workflow, strategy, or research buckets.",
+            "This is implemented as local SharpEdge bridge logic for workflow-state organization.",
+            "It does not claim verified public Robinhood watchlist-directory support.",
+        ),
     ),
     CommandSpec(
         name="get_option_watchlist",

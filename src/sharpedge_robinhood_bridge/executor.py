@@ -5,10 +5,11 @@ from typing import Any
 
 from .models import CommandExecutionResult
 from .router import plan_command
-from .watchlists import create_watchlist
+from .watchlists import create_watchlist, get_watchlists
 
 _HANDLER_MAP = {
     "create_watchlist": create_watchlist,
+    "get_watchlists": get_watchlists,
 }
 
 

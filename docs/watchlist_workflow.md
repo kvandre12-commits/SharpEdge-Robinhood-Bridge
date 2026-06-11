@@ -6,6 +6,8 @@
 
 **Use when:** A new workflow, strategy, or research bucket is needed.
 
+Related command purpose for `get_watchlists`: review existing workflow, strategy, or research buckets in canonical stage order.
+
 In SharpEdge, watchlists are **workflow states**, not passive storage bins.
 
 A symbol does not merely sit in a list. It moves through a governed decision
@@ -55,7 +57,7 @@ Allowed posture:
 Typical watchlist commands:
 
 - `create_watchlist` (implemented local custom logic)
-- `get_watchlists`
+- `get_watchlists` (implemented local custom logic)
 - `get_watchlist`
 - `update_watchlist`
 
@@ -173,7 +175,7 @@ Belong mainly in:
 Examples:
 
 - `create_watchlist` (implemented local custom logic)
-- `get_watchlists`
+- `get_watchlists` (implemented local custom logic)
 - `get_watchlist`
 - `update_watchlist`
 

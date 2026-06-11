@@ -65,7 +65,7 @@ Use for commands that are not currently verified in the public source but are re
 Examples:
 
 - `create_watchlist` (implemented local custom logic)
-- `get_watchlists`
+- `get_watchlists` (implemented local custom logic)
 - `update_watchlist`
 - `get_option_chains`
 - `get_option_instruments`

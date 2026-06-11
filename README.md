@@ -56,11 +56,11 @@ Approval-gated trading intents:
 Implemented custom logic:
 
 - `create_watchlist` — create a workflow-state watchlist for organizing trading ideas
+- `get_watchlists` — list existing workflow-state watchlists in stage order
 
 Custom-logic candidates we can build next:
 
 - `update_watchlist`
-- `get_watchlists`
 - `get_option_watchlist`
 - `get_option_chains`
 - `get_option_instruments`
@@ -88,6 +88,12 @@ Run a local custom-logic command:
 
 ```bash
 python -m sharpedge_robinhood_bridge run create_watchlist --payload '{"name":"Candidate","symbols":["AAPL","MSFT"]}'
+```
+
+List current workflow-state watchlists:
+
+```bash
+python -m sharpedge_robinhood_bridge run get_watchlists
 ```
 
 Build a command plan:

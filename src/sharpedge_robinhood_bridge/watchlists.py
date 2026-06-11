@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from .workflow_states import normalize_workflow_state, workflow_state_labels
+from .workflow_states import normalize_workflow_state, workflow_state_labels, workflow_state_order
 
 STORE_DIR = "outputs"
 STORE_NAME = "watchlists.json"
@@ -73,6 +73,17 @@ def _find_watchlist(store: dict[str, Any], state_key: str) -> dict[str, Any] | N
     return None
 
 
+def _sorted_watchlists(store: dict[str, Any]) -> list[dict[str, Any]]:
+    watchlists = [item for item in store["watchlists"] if isinstance(item, dict)]
+    return sorted(
+        watchlists,
+        key=lambda item: (
+            workflow_state_order(str(item.get("state_key") or "")),
+            str(item.get("name") or ""),
+        ),
+    )
+
+
 def create_watchlist(payload: dict[str, Any], *, base_dir: Path | None = None) -> dict[str, Any]:
     requested_name = str(payload.get("name") or payload.get("workflow_state") or "").strip()
     if not requested_name:
@@ -118,5 +129,22 @@ def create_watchlist(payload: dict[str, Any], *, base_dir: Path | None = None) -
         "notes": [
             "Created a workflow-state watchlist queue.",
             "This is local SharpEdge bridge state, not a claimed public Robinhood watchlist API write.",
+        ],
+    }
+
+
+def get_watchlists(payload: dict[str, Any], *, base_dir: Path | None = None) -> dict[str, Any]:
+    del payload
+    store = _load_store(base_dir)
+    watchlists = _sorted_watchlists(store)
+    return {
+        "status": "ok",
+        "storage_path": str(_store_path(base_dir)),
+        "schema_version": store.get("schema_version", SCHEMA_VERSION),
+        "total_watchlists": len(watchlists),
+        "watchlists": watchlists,
+        "notes": [
+            "Returned local SharpEdge workflow-state watchlists in canonical stage order.",
+            "This is local SharpEdge bridge state, not a claimed public Robinhood watchlist directory API read.",
         ],
     }

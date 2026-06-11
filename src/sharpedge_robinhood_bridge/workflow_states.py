@@ -48,3 +48,10 @@ def normalize_workflow_state(value: str) -> WorkflowState | None:
 
 def workflow_state_labels() -> list[str]:
     return [state.label for state in WORKFLOW_STATES]
+
+
+def workflow_state_order(state_key: str) -> int:
+    for index, state in enumerate(WORKFLOW_STATES):
+        if state.key == state_key:
+            return index
+    return len(WORKFLOW_STATES)

@@ -64,10 +64,10 @@ It should answer questions like:
 Implemented:
 
 - `create_watchlist`
+- `get_watchlists`
 
 Next strong candidates:
 
-- `get_watchlists`
 - `update_watchlist`
 
 Those are strong watchlist-state commands for bridge-side logic in this repo.
