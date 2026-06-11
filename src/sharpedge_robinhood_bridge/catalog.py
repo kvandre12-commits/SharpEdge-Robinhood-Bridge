@@ -172,6 +172,7 @@ COMMAND_SPECS: tuple[CommandSpec, ...] = (
         handler_name="create_watchlist",
         summary="Create a local SharpEdge workflow-state watchlist for organizing trading ideas by decision stage.",
         notes=(
+            "Use when a new workflow, strategy, or research bucket is needed.",
             "This is implemented as local SharpEdge bridge logic for workflow-state organization.",
             "It does not claim verified public Robinhood watchlist-write support.",
         ),
