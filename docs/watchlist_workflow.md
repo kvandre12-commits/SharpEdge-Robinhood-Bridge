@@ -6,7 +6,7 @@
 
 **Use when:** A new workflow, strategy, or research bucket is needed.
 
-Related command purpose for `get_watchlists`: review existing workflow, strategy, or research buckets in canonical stage order.
+Related command purpose for `get_watchlists`: retrieve all watchlists available to the user within SharpEdge's local workflow layer, in canonical stage order.
 
 In SharpEdge, watchlists are **workflow states**, not passive storage bins.
 

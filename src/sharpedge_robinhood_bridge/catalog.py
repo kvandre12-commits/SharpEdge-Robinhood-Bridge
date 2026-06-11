@@ -191,8 +191,9 @@ COMMAND_SPECS: tuple[CommandSpec, ...] = (
         support_tier="implemented_custom_logic",
         route="custom_logic_local",
         handler_name="get_watchlists",
-        summary="List local SharpEdge workflow-state watchlists for reviewing current trading-idea buckets.",
+        summary="Retrieve all local SharpEdge workflow-state watchlists available to the user.",
         notes=(
+            "Purpose: retrieve all watchlists available to the user within SharpEdge's local workflow layer.",
             "Use when you need to review existing workflow, strategy, or research buckets.",
             "This is implemented as local SharpEdge bridge logic for workflow-state organization.",
             "It does not claim verified public Robinhood watchlist-directory support.",

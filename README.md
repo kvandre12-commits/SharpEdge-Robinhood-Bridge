@@ -56,7 +56,7 @@ Approval-gated trading intents:
 Implemented custom logic:
 
 - `create_watchlist` — create a workflow-state watchlist for organizing trading ideas
-- `get_watchlists` — list existing workflow-state watchlists in stage order
+- `get_watchlists` — retrieve all local workflow-state watchlists available to the user
 
 Custom-logic candidates we can build next:
 
