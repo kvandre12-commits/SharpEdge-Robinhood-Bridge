@@ -92,8 +92,15 @@ def grade_signal(
     *,
     analytics: AnalyticsContext | None = None,
 ) -> GradedTrade:
-    """Run ``decide`` on one signal and grade it against the forward return."""
+    """Run ``decide`` on one signal and grade it against the forward return.
+
+    A backtest must be hermetic: when no point-in-time analytics is supplied we
+    pass an explicit UNAVAILABLE context so ``decide`` does NOT reach into the
+    live execution-state file (that would be lookahead + non-reproducible).
+    """
     session = str(signal.get("session") or signal.get("date") or signal.get("ts") or "?")
+    if analytics is None:
+        analytics = AnalyticsContext(available=False, fresh=False, note="backtest: no point-in-time analytics")
     decision = decide(signal, analytics=analytics)
     action = decision["action"]
     reason = decision["reason"]
