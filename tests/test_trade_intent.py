@@ -174,6 +174,23 @@ class DecideFadeTests(unittest.TestCase):
         self.assertEqual(r["intent"].asset, "option")
         self.assertEqual(r["intent"].quantity, 1)
 
+    def test_fade_high_conviction_when_coiled(self) -> None:
+        # tight channel (coil) + expected move that reaches the magnet -> HIGH
+        sig = _sticky_signal(spot=501.0, call_wall=502.0, pin=496.0,
+                             micro={"ch_width_pct": 0.10},
+                             magnitude={"exp_move_realized_pct": 2.0})
+        r = decide(sig, analytics=_range_ctx())
+        self.assertEqual(r["action"], "trade")
+        self.assertIn("HIGH", r["reason"])
+        self.assertIn("coiled", r["intent"].rationale)
+
+    def test_fade_no_room_stands_down(self) -> None:
+        # at the edge AND sitting on the magnet (wall~=magnet~=spot) -> no room
+        r = decide(_sticky_signal(spot=496.0, call_wall=496.3, pin=496.0, put_wall=490.0),
+                   analytics=_range_ctx())
+        self.assertEqual(r["action"], "stand_down")
+        self.assertIn("nothing to fade", r["reason"])
+
 
 class DecideAnalyticsGateTests(unittest.TestCase):
     def test_runner_fires_when_trend_analytics_confirms(self) -> None:

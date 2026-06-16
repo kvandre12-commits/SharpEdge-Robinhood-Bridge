@@ -162,6 +162,12 @@ RANGE_VETO_MARGIN = 0.20
 TREND_VETO_MARGIN = 0.20
 # Fade trigger: price within this % of a wall counts as 'at the edge' to fade.
 FADE_EDGE_PCT = 0.30
+# Fade conviction inputs (validated this session):
+#  - a TIGHT intraday channel = an active coil at the wall. SPY coils FADE (dealer
+#    long-gamma suppresses breakouts), so a tight channel STRENGTHENS the fade.
+#  - we need ROOM back to the magnet to make the reversion worth trading.
+FADE_COIL_MAX_WIDTH_PCT = 0.30   # micro.ch_width_pct <= this = coiled
+FADE_MIN_ROOM_PCT = 0.08         # need >= this % distance spot->magnet to fade
 # Pay up to this fraction over the model premium to get a marketable buy fill.
 ENTRY_LIMIT_MARKUP = 0.02
 
@@ -309,6 +315,13 @@ def _fade_decision(signal, spot, analytics):
         return {"action": "stand_down",
                 "reason": "sticky day but price not at an edge to fade", "intent": None}
 
+    # need ROOM back to the magnet for the reversion to be worth trading
+    room_pct = abs(spot - magnet) / spot * 100 if magnet else None
+    if room_pct is not None and room_pct < FADE_MIN_ROOM_PCT:
+        return {"action": "stand_down",
+                "reason": f"price already at magnet ${magnet:g} (room {room_pct:.2f}%) - nothing to fade",
+                "intent": None}
+
     analytics = _load_analytics(signal, analytics)
     if _trend_favored(analytics):
         return {"action": "stand_down",
@@ -319,17 +332,36 @@ def _fade_decision(signal, spot, analytics):
     # if price hugs both edges (very tight range), fade the nearer one
     fade_call = near_call and (not near_put or (dist_call or 9) <= (dist_put or 9))
     if fade_call:
-        right, edge, magnet_txt = "put", f"call wall ${cw:g}", f" toward magnet {magnet:g}" if magnet else ""
+        right, edge = "put", f"call wall ${cw:g}"
         reason = "range fade short at call wall"
     else:
-        right, edge, magnet_txt = "call", f"put wall ${pw:g}", f" toward magnet {magnet:g}" if magnet else ""
+        right, edge = "call", f"put wall ${pw:g}"
         reason = "range fade long at put wall"
+
+    # conviction: a tight intraday channel (coil) + an expected move that can reach
+    # the magnet = HIGH. The coil-fade edge is why a tight channel helps here.
+    micro = signal.get("micro") or {}
+    mag = signal.get("magnitude") or {}
+    ch_width = micro.get("ch_width_pct")
+    exp_move = mag.get("exp_move_realized_pct")
+    coiled = ch_width is not None and ch_width <= FADE_COIL_MAX_WIDTH_PCT
+    move_reaches = (exp_move is not None and room_pct is not None and exp_move >= room_pct)
+    conviction = "HIGH" if (coiled and (move_reaches or exp_move is None)) else "standard"
+
+    tags = []
+    if coiled:
+        tags.append(f"coiled (ch {ch_width:.2f}%)")
+    if room_pct is not None:
+        tags.append(f"room {room_pct:.2f}%->magnet ${magnet:g}")
+    if exp_move is not None:
+        tags.append(f"exp move {exp_move:.2f}%" + (" reaches" if move_reaches else " short of target"))
+    tag_txt = "; ".join(tags)
     intent = _option_intent(
         signal, right,
-        (f"Sticky day (pos gamma), price at {edge} - fade reversion{magnet_txt}. "
-         f"1 {right.upper()} contract. [analytics: {analytics.note}]"),
+        (f"FADE [{conviction}] {edge} -> revert to magnet. 1 {right.upper()} contract. "
+         f"{tag_txt}. [analytics: {analytics.note}]"),
     )
-    return {"action": "trade", "reason": reason, "intent": intent}
+    return {"action": "trade", "reason": f"{reason} ({conviction})", "intent": intent}
 
 
 def load_signal(path: Path | None = None) -> dict[str, Any]:
