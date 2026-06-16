@@ -82,7 +82,7 @@ class RunBacktestTests(unittest.TestCase):
         self.assertEqual(res.n_signals, 2)
         self.assertEqual(res.n_trades, 1)
         # the stand-down reason is still bucketed for state analysis
-        self.assertIn("positive gamma / sticky chop - no directional edge",
+        self.assertIn("sticky day but price not at an edge to fade",
                       [r for r in res.by_reason])
 
     def test_point_in_time_analytics_veto_applied(self) -> None:

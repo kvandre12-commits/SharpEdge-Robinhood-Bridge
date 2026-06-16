@@ -157,8 +157,39 @@ MIN_MOM = 0.05              # need real 15m thrust
 # Daily analytics may only TIGHTEN execution. A fresh range-day read whose
 # range probability exceeds trend probability by this margin vetoes a runner long.
 RANGE_VETO_MARGIN = 0.20
+# Symmetric guard for the fade: a fresh TREND-dominant read vetoes a fade (the
+# 'edge' is more likely to break than revert when the daily regime favors trend).
+TREND_VETO_MARGIN = 0.20
+# Fade trigger: price within this % of a wall counts as 'at the edge' to fade.
+FADE_EDGE_PCT = 0.30
 # Pay up to this fraction over the model premium to get a marketable buy fill.
 ENTRY_LIMIT_MARKUP = 0.02
+
+
+def _load_analytics(signal, analytics):
+    if analytics is None:
+        analytics = load_execution_state(symbol=signal.get("symbol", "SPY"))
+    return analytics
+
+
+def _range_favored(a: AnalyticsContext) -> bool:
+    """Fresh daily regime leans RANGE by the veto margin (kills a runner long)."""
+    return (
+        a.fresh
+        and a.prob_trend is not None
+        and a.prob_range is not None
+        and (a.prob_range - a.prob_trend) > RANGE_VETO_MARGIN
+    )
+
+
+def _trend_favored(a: AnalyticsContext) -> bool:
+    """Fresh daily regime leans TREND by the veto margin (kills a fade)."""
+    return (
+        a.fresh
+        and a.prob_trend is not None
+        and a.prob_range is not None
+        and (a.prob_trend - a.prob_range) > TREND_VETO_MARGIN
+    )
 
 
 def _option_intent(
@@ -213,54 +244,92 @@ def decide(
         return {"action": "trade", "reason": "test mode", "intent": intent}
 
     regime = signal.get("gamma_regime")
+
+    # Two regimes, two playbooks. Negative gamma = trend/breakout -> runner long.
+    # Positive gamma = sticky chop -> fade the edge back to the magnet. Analytics
+    # can only TIGHTEN either side (veto), never create a trade.
+    if regime == "negative":
+        return _runner_decision(signal, spot, analytics)
+    if regime == "positive":
+        return _fade_decision(signal, spot, analytics)
+    return {"action": "stand_down",
+            "reason": f"gamma regime '{regime}' unknown - no playbook", "intent": None}
+
+
+def _runner_decision(signal, spot, analytics):
+    """Negative-gamma breakout -> confirmed bullish runner = long ATM call."""
     vs_vwap = float(signal.get("vs_vwap") or 0)
     mom = float(signal.get("mom15") or 0)
     vol = float(signal.get("vol_mult") or 0)
     cw, pw = signal.get("call_wall"), signal.get("put_wall")
 
-    # 1. sticky/positive-gamma chop = stand down (fade-the-edges has no execution mapping yet)
-    if regime == "positive":
-        return {"action": "stand_down",
-                "reason": "positive gamma / sticky chop - no directional edge", "intent": None}
-    # 2. thin volume = unconfirmed
     if vol < MIN_VOL_MULT:
         return {"action": "stand_down",
                 "reason": f"volume {vol:.1f}x < {MIN_VOL_MULT}x - move not confirmed", "intent": None}
-    # 3. sitting on a wall = bad entry
+    # sitting ON a wall = bad breakout entry
     for wall, name in ((cw, "call wall"), (pw, "put wall")):
         if wall and abs(spot - wall) / spot * 100 < WALL_PROXIMITY_PCT:
             return {"action": "stand_down",
                     "reason": f"price pinned to {name} ${wall:g}", "intent": None}
-    # 4. runner day + bullish thrust above VWAP = the only long we take
-    if regime == "negative" and vs_vwap > MIN_VS_VWAP and mom > MIN_MOM:
-        # Daily analytics gate: tighten only. Load fail-soft if not injected.
-        if analytics is None:
-            analytics = load_execution_state(symbol=signal.get("symbol", "SPY"))
-        analytics_note = analytics.note
-        if (
-            analytics.fresh
-            and analytics.prob_trend is not None
-            and analytics.prob_range is not None
-            and (analytics.prob_range - analytics.prob_trend) > RANGE_VETO_MARGIN
-        ):
-            return {
-                "action": "stand_down",
-                "reason": (
-                    f"daily regime favors range (P_range {analytics.prob_range:.2f} > "
-                    f"P_trend {analytics.prob_trend:.2f}) - runner long vetoed"
-                ),
-                "intent": None,
-            }
-        intent = _option_intent(
-            signal, "call",
-            (f"Runner day (neg gamma), price {vs_vwap:+.2f}% above VWAP, "
-             f"15m mom {mom:+.2f}%, vol {vol:.1f}x confirms. Long ATM call, bias to call wall. "
-             f"[analytics: {analytics_note}]"),
-        )
-        return {"action": "trade", "reason": "confirmed bullish runner", "intent": intent}
+    if not (vs_vwap > MIN_VS_VWAP and mom > MIN_MOM):
+        return {"action": "stand_down",
+                "reason": "runner regime but no thrust (need vs-VWAP + 15m momentum)", "intent": None}
 
-    return {"action": "stand_down",
-            "reason": "no qualifying setup (need runner regime + thrust + volume)", "intent": None}
+    analytics = _load_analytics(signal, analytics)
+    if _range_favored(analytics):
+        return {"action": "stand_down",
+                "reason": (f"daily regime favors range (P_range {analytics.prob_range:.2f} > "
+                           f"P_trend {analytics.prob_trend:.2f}) - runner long vetoed"),
+                "intent": None}
+    intent = _option_intent(
+        signal, "call",
+        (f"Runner day (neg gamma), price {vs_vwap:+.2f}% above VWAP, "
+         f"15m mom {mom:+.2f}%, vol {vol:.1f}x confirms. Long ATM call, bias to call wall. "
+         f"[analytics: {analytics.note}]"),
+    )
+    return {"action": "trade", "reason": "confirmed bullish runner", "intent": intent}
+
+
+def _fade_decision(signal, spot, analytics):
+    """Positive-gamma sticky day -> fade the edge back toward the magnet.
+
+    At/near the call wall (resistance) we fade SHORT with a put; at/near the put
+    wall (support) we fade LONG with a call. We only fade when price has actually
+    reached an edge - mid-range there is nothing to fade. A fresh TREND-dominant
+    daily read vetoes the fade (the edge is more likely to break than revert).
+    """
+    cw, pw = signal.get("call_wall"), signal.get("put_wall")
+    magnet = signal.get("pin") or signal.get("max_pain")
+
+    dist_call = (cw - spot) / spot * 100 if cw and spot <= cw else None
+    dist_put = (spot - pw) / spot * 100 if pw and spot >= pw else None
+    near_call = dist_call is not None and dist_call <= FADE_EDGE_PCT
+    near_put = dist_put is not None and dist_put <= FADE_EDGE_PCT
+    if not (near_call or near_put):
+        return {"action": "stand_down",
+                "reason": "sticky day but price not at an edge to fade", "intent": None}
+
+    analytics = _load_analytics(signal, analytics)
+    if _trend_favored(analytics):
+        return {"action": "stand_down",
+                "reason": (f"daily regime favors trend (P_trend {analytics.prob_trend:.2f} > "
+                           f"P_range {analytics.prob_range:.2f}) - fade vetoed"),
+                "intent": None}
+
+    # if price hugs both edges (very tight range), fade the nearer one
+    fade_call = near_call and (not near_put or (dist_call or 9) <= (dist_put or 9))
+    if fade_call:
+        right, edge, magnet_txt = "put", f"call wall ${cw:g}", f" toward magnet {magnet:g}" if magnet else ""
+        reason = "range fade short at call wall"
+    else:
+        right, edge, magnet_txt = "call", f"put wall ${pw:g}", f" toward magnet {magnet:g}" if magnet else ""
+        reason = "range fade long at put wall"
+    intent = _option_intent(
+        signal, right,
+        (f"Sticky day (pos gamma), price at {edge} - fade reversion{magnet_txt}. "
+         f"1 {right.upper()} contract. [analytics: {analytics.note}]"),
+    )
+    return {"action": "trade", "reason": reason, "intent": intent}
 
 
 def load_signal(path: Path | None = None) -> dict[str, Any]:

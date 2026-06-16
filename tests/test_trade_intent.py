@@ -52,10 +52,11 @@ class DecideGateTests(unittest.TestCase):
         # SharpEdge trades options, never equity.
         self.assertEqual(r["intent"].asset, "option")
 
-    def test_positive_gamma_stands_down(self) -> None:
+    def test_positive_gamma_midrange_stands_down(self) -> None:
+        # sticky day but price is mid-range (not at an edge) -> nothing to fade
         r = decide(_runner_signal(gamma_regime="positive"), analytics=_ctx())
         self.assertEqual(r["action"], "stand_down")
-        self.assertIn("positive gamma", r["reason"])
+        self.assertIn("not at an edge", r["reason"])
 
     def test_thin_volume_stands_down(self) -> None:
         r = decide(_runner_signal(vol_mult=1.0), analytics=_ctx())
@@ -117,6 +118,61 @@ class OptionLegBuilderTests(unittest.TestCase):
         self.assertEqual(leg["action"], "buy_to_open")
         self.assertEqual(leg["ratio"], 1)
         self.assertGreater(leg["est_premium"], 0)
+
+
+def _sticky_signal(**over):
+    """Positive-gamma sticky day with walls bracketing spot."""
+    sig = {
+        "symbol": "SPY", "spot": 500.0, "atm_iv": 0.15, "exp": "2026-06-15",
+        "gamma_regime": "positive",
+        "call_wall": 502.0, "put_wall": 490.0, "pin": 496.0,
+    }
+    sig.update(over)
+    return sig
+
+
+def _range_ctx(prob_trend=0.3, prob_range=0.7):
+    return AnalyticsContext(
+        available=True, fresh=True, note="range ctx",
+        prob_trend=prob_trend, prob_range=prob_range, final_bias="RANGE_FADE",
+    )
+
+
+class DecideFadeTests(unittest.TestCase):
+    """Positive-gamma fade-the-edge playbook (the 263 RANGE_FADE days)."""
+
+    def test_fade_short_put_at_call_wall(self) -> None:
+        # spot just below the call wall -> fade SHORT with a put
+        r = decide(_sticky_signal(spot=501.0, call_wall=502.0), analytics=_range_ctx())
+        self.assertEqual(r["action"], "trade")
+        self.assertEqual(r["intent"].option_legs[0]["right"], "put")
+        self.assertIn("call wall", r["reason"])
+
+    def test_fade_long_call_at_put_wall(self) -> None:
+        # spot just above the put wall -> fade LONG with a call
+        r = decide(_sticky_signal(spot=490.5, put_wall=490.0, call_wall=505.0),
+                   analytics=_range_ctx())
+        self.assertEqual(r["action"], "trade")
+        self.assertEqual(r["intent"].option_legs[0]["right"], "call")
+        self.assertIn("put wall", r["reason"])
+
+    def test_fade_midrange_stands_down(self) -> None:
+        r = decide(_sticky_signal(spot=496.0), analytics=_range_ctx())
+        self.assertEqual(r["action"], "stand_down")
+        self.assertIn("not at an edge", r["reason"])
+
+    def test_fade_vetoed_when_daily_favors_trend(self) -> None:
+        # at the edge, but fresh daily regime says TREND -> fade vetoed
+        r = decide(_sticky_signal(spot=501.0, call_wall=502.0),
+                   analytics=AnalyticsContext(available=True, fresh=True, note="trend",
+                                              prob_trend=0.75, prob_range=0.25))
+        self.assertEqual(r["action"], "stand_down")
+        self.assertIn("favors trend", r["reason"])
+
+    def test_fade_one_option_contract(self) -> None:
+        r = decide(_sticky_signal(spot=501.0, call_wall=502.0), analytics=_range_ctx())
+        self.assertEqual(r["intent"].asset, "option")
+        self.assertEqual(r["intent"].quantity, 1)
 
 
 class DecideAnalyticsGateTests(unittest.TestCase):
